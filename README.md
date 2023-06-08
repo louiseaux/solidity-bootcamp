@@ -1,1 +1,1 @@
-# solidity-bootcamp
+# Solidity Bootcamp
