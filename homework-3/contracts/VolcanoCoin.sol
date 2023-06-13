@@ -4,14 +4,14 @@ pragma solidity ^0.8.0;
 
 contract VolcanoCoin {
 
-    uint256 totalSupply = 10000;
+    uint256 public totalSupply;
     address owner;
 
-    event SupplyChange(uint256 indexed);
-    event Transfer(address, address, uint256);
+    event supplyChange(uint256);
+    event Transfer(address indexed, uint256);
 
-    mapping(address => uint256) private balance;
-    mapping(address => Payment[]) private payments;
+    mapping(address => uint256) public balances;
+    mapping(address => Payment[]) payments;
 
     struct Payment {
         address recipient;
@@ -19,44 +19,40 @@ contract VolcanoCoin {
     }
 
     constructor() {
+        totalSupply = 10000;
         owner = msg.sender;
-        balance[owner] = totalSupply;
+        balances[msg.sender] = totalSupply;
     }
 
     modifier onlyOwner {
-        if(msg.sender == owner) {
-            _;
-        }
+        require(msg.sender == owner, "You must be the owner");
+        _;
     }
 
     function getSupply() public view returns(uint256) {
         return totalSupply;
-    }
-    
-    function getBalance(address _account) public view returns(uint256) {
-        return balance[_account];
     }
 
     function getPayments(address _account) public view returns(Payment[] memory) {
         return payments[_account];
     }
 
-    function addSupply() public onlyOwner {
+    function updateTotalSupply() public onlyOwner {
         totalSupply += 1000;
-        emit SupplyChange(totalSupply);
+        emit supplyChange(totalSupply);
     }
 
     function transfer(address _to, uint256 _amount) public {
-        require(_amount > 0, "Amount must be > 0");
+        require(balances[msg.sender] >= _amount, "Insufficient balance");
 
-        uint256 fromBalance = getBalance(msg.sender);
-        require(fromBalance >= _amount, "Transfer amount exceeds balance");
+        balances[msg.sender] -= _amount;
+        balances[_to] += _amount;
 
-        balance[msg.sender] = fromBalance - _amount;
-        balance[_to] += _amount;
+        emit Transfer(_to, _amount);
 
-        payments[msg.sender].push(Payment({recipient:_to, amount:_amount}));
-
-        emit Transfer(msg.sender, _to, _amount);
+        Payment memory payment;
+        payment.recipient = _to;
+        payment.amount = _amount;
+        payments[msg.sender].push(payment);
     }
 }
